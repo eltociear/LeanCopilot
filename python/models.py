@@ -9,6 +9,8 @@ from transformers import (
     AutoTokenizer,
     AutoModelForTextEncoding,
 )
+from kani import Kani
+from kani.engines.openai import OpenAIEngine
 
 
 class Generator(ABC):
@@ -164,6 +166,16 @@ class EncoderOnlyTransformer(Encoder, Transformer):
         ).last_hidden_state
         feature = hidden_state.mean(dim=1).squeeze()
         return feature.cpu().numpy()
+    
+
+class GPT4Generator(Generator):
+    def __init__(self, api_key: str, system_prompt: str) -> None:
+        self.system_prompt = system_prompt
+        engine = OpenAIEngine(api_key, model="gpt-4")
+        self.model = Kani(engine, system_prompt=self.system_prompt)
+
+    async def generate(self, user_prompt: str) -> str:
+        return await self.model.chat_round_str(user_prompt)
 
 
 if __name__ == "__main__":
